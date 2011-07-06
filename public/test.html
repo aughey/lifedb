@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <title>Test script</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  </head>
+  <body>
+    <h1>Get</h1>
+    <form action="/get" method="get"/>
+      id: <input name="id"></input></br>
+      <input type="submit"></input>
+    </form>
+    <h1>Save</h1>
+    <form action="/save" method="post"/>
+      <textarea name="data"></textarea></br>
+      <input type="submit"></input>
+    </form>
+    <h1>Search</h1>
+    <form action="/search" method="get"/>
+      <input name="q"></input></br>
+      <input type="submit"></input>
+    </form>
+    <h1>Update</h1>
+    <form action="/update" method="post"/>
+      ID: <input name="id"></input></br>
+      New Data: <input name="data"></input></br>
+      <input type="submit"></input>
+    </form>
+    <h1>Sample data</h1>
+    <div id="sample">Sample data goes here</div>
+
+    <script src="/javascripts/lifedb.js"></script>
+  </body>
+</html>
