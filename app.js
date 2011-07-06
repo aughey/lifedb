@@ -73,7 +73,7 @@ function startApp(db,collection) {
       query = JSON.parse(querystr);
     }
     collection.find(query).toArray(function(err, results) {
-      res.send(JSON.stringify(results));
+      res.send(JSON.stringify({results: results}));
     });
   });
   app.post('/update', function(req, res)  {
