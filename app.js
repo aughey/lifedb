@@ -95,9 +95,11 @@ function startApp(db,collection) {
             donecallback(returndata);
             return;
           } else {
-            state.lastsave = docs;
-            returndata.push(docs);
-            next();
+						collection.update( { _id: parent_record._id }, { '$addToSet' : { children: docs._id } }, function() {
+							state.lastsave = docs;
+							returndata.push(docs);
+							next();
+						});
           }
         });
       });
