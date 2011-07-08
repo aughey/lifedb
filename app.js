@@ -42,7 +42,27 @@ function startApp(db,collection) {
 
   function executeSingleCommand(command, res) {
     executeCommand([command],0,{}, [], function(ret) {
+      if(ret.length != 1) {
+        console.log("Really bad, the return value length of executeCommand through ExecuteSingleCommand was not 1");
+      } else {
+        ret = ret[0];
+      }
       res.send(JSON.stringify(ret));
+    });
+  }
+
+  function getRecordFromCommand(prefix, command, callback) {
+    var mid;
+    if(command[prefix + "rawid"]) {
+      mid = command[prefix + 'rawid']
+    } else if(command[prefix + "id"]) {
+      mid = db.bson_serializer.ObjectID.createFromHexString(command[prefix + 'id']);
+    } else {
+      callback(null);
+      return;
+    }
+    collection.findOne({_id: mid}, function(err, results) {
+      callback(results);
     });
   }
 
@@ -55,36 +75,46 @@ function startApp(db,collection) {
     var next = function() {
       executeCommand(commands,index+1,state,returndata,donecallback);
     }
-    if(command.op == 'save') {
-      var tosave = {
-        data: command.data
-      };
-      collection.insert(tosave, function(err, docs) {
-        if(err) {
-          returndata.push("error");
+    if(command.op == 'new') {
+      var time = new Date;
+
+      getRecordFromCommand("parent_",command, function(parent_record) {
+        if(!parent_record) {
+          returndata.push("error: no parent for " + JSON.stringify(command));
           donecallback(returndata);
           return;
-        } else {
-          state.lastsave = docs;
-          returndata.push(docs);
-          next();
         }
+        var tosave = {
+          data: command.data,
+          created_on: time,
+          parents: [ parent_record._id ]
+        };
+        collection.insert(tosave, function(err, docs) {
+          if(err) {
+            returndata.push("error");
+            donecallback(returndata);
+            return;
+          } else {
+            state.lastsave = docs;
+            returndata.push(docs);
+            next();
+          }
+        });
       });
     } else if(command.op == 'search') {
-      var querystr = command.q;
-      var query = {};
-      if(querystr) {
-        query = JSON.parse(querystr);
+      var q = command.q;
+      if(!q) {
+        q = { }
       }
-      collection.find(query).toArray(function(err, results) {
+      collection.find(q).toArray(function(err, results) {
         returndata.push(results);
         next();
       });
     } else if(command.op == 'get') {
-      var mid = db.bson_serializer.ObjectID.createFromHexString(command.id);
-      collection.findOne({_id: mid}, function(err, results) {
-        if(results) {
-          returndata.push(results);
+      getRecordFromCommand("",command, function(record) {
+        if(record) {
+          returndata.push(record);
+          next();
         } else {
           returndata.push("error");
           donecallback(returndata);
@@ -98,24 +128,24 @@ function startApp(db,collection) {
       return;
     }
   }
-
-  app.post("/execute", function(req, res) {
-    var commandstr = req.param('command');
-    var commandjs = JSON.parse(commandstr);
+  var postfunction = function(req, res) {
+    var commandjs = null;
+    if(req.param('command')) {
+      var commandstr = req.param('command');
+      commandjs = [JSON.parse(commandstr)];
+    } else if(req.param('commands')) {
+      var commandstr = req.param('commands');
+      commandjs = JSON.parse(commandstr);
+    }
 
     var returndata = [ ];
     var state = { };
     executeCommand(commandjs,0,state,returndata,function() {
       res.send(JSON.stringify(returndata));
     });
-  });
-
-
-  app.post("/save", function(req, res) {
-    var data = req.param('data');
-    var datajs = JSON.parse(data);
-    executeSingleCommand( { op: 'save', data: datajs }, res);
-  });
+  }
+  app.post("/execute", postfunction);
+  app.get("/execute", postfunction);
 
   app.get('/get', function(req, res) {
     executeSingleCommand( { op: 'get', id: req.param('id') }, res);

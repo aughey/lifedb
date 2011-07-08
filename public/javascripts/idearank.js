@@ -1,4 +1,4 @@
-(function() {
+//(function() {
   var templates = { }
 
   var jade = require("jade");
@@ -14,45 +14,86 @@
     }
   }
 
+  function getTemplate(name, callback) {
+    if(templates[name]) {
+      return;
+    }
+    templates[name] = [];
+    jQuery.get(name,{}, function(template) {
+      // render any registered template funcitons
+      var regcb = templates[name];
+      templates[name] = template;
+      jQuery.each(regcb, function(index, cb) {
+        cb(template);
+      });
+      if(callback) {
+        callback(template);
+      }
+    });
+  }
+
   function renderTemplate(name,data,callback) {
     // Check our templates and get one if needed
     if(templates[name]) {
-      _renderTemplate(name,data,callback);
+      if(templates[name] instanceof Array) {
+        templates[name].push(function() {
+          _renderTemplate(name,data,callback);
+        });
+      } else {
+        _renderTemplate(name,data,callback);
+      }
     } else {
-      jQuery.get(name,{}, function(template) {
-        templates[name] = template;
+      getTemplate(name,function() {
         _renderTemplate(name,data,callback);
       });
     }
   }
 
-  function updateDIV(id,data)
+  function updateDIV(id,templatename,data)
   {
-    renderTemplate("results.mustache",data,function(html) {
+    renderTemplate(templatename,data,function(html) {
       $(id).html(html);
+    });
+  }
+
+  function executeCommand(command, callback) {
+    jQuery.post("/execute",{ command: JSON.stringify(command) },function(data) {
+      data = jQuery.parseJSON(data);
+      callback(data);
     });
   }
 
   function update()
   {
     var divs = ['#results','#doneresults'];
+    var templatename = "results.mustache";
     jQuery.each(divs, function(index,div) {
+      getTemplate(templatename);
       $(div).html("Loading...");
-      jQuery.getJSON('/search',{}, function(data) { updateDIV(div,data[0]); });
-    });
-  }
-
-  function loadTemplates()
-  {
-    jQuery.get("/results.mustache", { }, function(data) {
-      templates.results = data;
-      update();
+      var command = {
+        op: 'search',
+        q: { '$query': {}, '$orderby': { 'created_on': -1 } }
+        //q: { '$query': null }
+        // q: { }
+        //q: { '$orderby': 'idea'}
+      };
+      executeCommand(command, function(data) {
+        updateDIV(div,templatename,data[0]);
+      });
     });
   }
 
   $(document).ready(function() {
-    //  loadTemplates();
     $('#updatebutton').click(update);
-    update();
+    executeCommand({ op: 'get', rawid: 'lifedb'}, update);
   });
-})();
+
+  function sendidea(idea) {
+    var command = {
+      op: 'new',
+      data: { idea: idea.attr('value') },
+      parent_rawid: 'lifedb'
+    };
+    executeCommand(command, update);
+  }
+//})();
