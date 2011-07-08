@@ -6,7 +6,7 @@
   function _renderTemplate(name,data,callback) {
     var template = templates[name];
     if(name.match(/\.mustache$/)) {
-      callback(Mustache.to_html(template,data));
+      callback(Mustache.to_html(template,{ results: data }));
     } else if(name.match(/\.jade$/)) {
       callback(jade.render(template, { locals: { data: data } }));
     } else {
@@ -35,7 +35,11 @@
 
   function update()
   {
-    jQuery.getJSON('/search',{}, function(data) { updateDIV('#results',data); });
+    var divs = ['#results','#doneresults'];
+    jQuery.each(divs, function(index,div) {
+      $(div).html("Loading...");
+      jQuery.getJSON('/search',{}, function(data) { updateDIV(div,data[0]); });
+    });
   }
 
   function loadTemplates()
@@ -48,6 +52,7 @@
 
   $(document).ready(function() {
     //  loadTemplates();
+    $('#updatebutton').click(update);
     update();
   });
 })();

@@ -6,17 +6,6 @@
 var express = require('express');
 var mongo = require('mongodb');
 
-function sendID(collection,mid,res)
-{
-    collection.findOne({_id: mid}, function(err, results) {
-      if(results) {
-        res.send(JSON.stringify(results));
-      } else {
-        res.send(JSON.stringify(null));
-      }
-    });
-}
-
 function startApp(db,collection) {
   var app = module.exports = express.createServer();
 
@@ -43,38 +32,97 @@ function startApp(db,collection) {
   // Routes
 
   app.get('/', function(req, res){
+    res.redirect("/idearank.html");
+    /*
     res.render('index', {
       title: 'Express 2'
     });
+    */
   });
+
+  function executeSingleCommand(command, res) {
+    executeCommand([command],0,{}, [], function(ret) {
+      res.send(JSON.stringify(ret));
+    });
+  }
+
+  function executeCommand(commands, index, state, returndata, donecallback) {
+    if(index >= commands.length) {
+      donecallback(returndata);
+      return;
+    }
+    var command = commands[index];
+    var next = function() {
+      executeCommand(commands,index+1,state,returndata,donecallback);
+    }
+    if(command.op == 'save') {
+      var tosave = {
+        data: command.data
+      };
+      collection.insert(tosave, function(err, docs) {
+        if(err) {
+          returndata.push("error");
+          donecallback(returndata);
+          return;
+        } else {
+          state.lastsave = docs;
+          returndata.push(docs);
+          next();
+        }
+      });
+    } else if(command.op == 'search') {
+      var querystr = command.q;
+      var query = {};
+      if(querystr) {
+        query = JSON.parse(querystr);
+      }
+      collection.find(query).toArray(function(err, results) {
+        returndata.push(results);
+        next();
+      });
+    } else if(command.op == 'get') {
+      var mid = db.bson_serializer.ObjectID.createFromHexString(command.id);
+      collection.findOne({_id: mid}, function(err, results) {
+        if(results) {
+          returndata.push(results);
+        } else {
+          returndata.push("error");
+          donecallback(returndata);
+          return;
+        }
+      });
+    } else if(command.op == 'add_child') {
+    } else {
+      returndata.push("error: Unknown command " + command.op);
+      donecallback(returndata);
+      return;
+    }
+  }
+
+  app.post("/execute", function(req, res) {
+    var commandstr = req.param('command');
+    var commandjs = JSON.parse(commandstr);
+
+    var returndata = [ ];
+    var state = { };
+    executeCommand(commandjs,0,state,returndata,function() {
+      res.send(JSON.stringify(returndata));
+    });
+  });
+
+
   app.post("/save", function(req, res) {
     var data = req.param('data');
     var datajs = JSON.parse(data);
-    var tosave = {
-      data: datajs
-    };
-    collection.insert(tosave, function(err, docs) {
-      if(err) {
-        res.send(err);
-      } else {
-        res.send(JSON.stringify(docs));
-      }
-    });
+    executeSingleCommand( { op: 'save', data: datajs }, res);
   });
+
   app.get('/get', function(req, res) {
-    var id = req.param('id');
-    var mid = db.bson_serializer.ObjectID.createFromHexString(id);
-    sendID(collection,mid,res);
+    executeSingleCommand( { op: 'get', id: req.param('id') }, res);
   });
   app.get('/search', function(req, res)  {
-    var querystr = req.param('q');
-    var query = {};
-    if(querystr) {
-      query = JSON.parse(querystr);
-    }
-    collection.find(query).toArray(function(err, results) {
-      res.send(JSON.stringify({results: results}));
-    });
+    var q = req.param('q');
+    executeSingleCommand( { op: 'search', q: q }, res);
   });
   app.post('/update', function(req, res)  {
     var id = req.param('id');

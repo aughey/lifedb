@@ -1,12 +1,15 @@
 <html>
   <head>
     <title>Idea Rank</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> -->
+    <script src="/javascripts/jquery.min.js"></script>
     <script src="/javascripts/mustache.js"></script>
     <script src="/javascripts/jade.min.js"></script>
     <script src="/javascripts/less-1.1.3.min.js"></script>
   </head>
   <body>
+    <input id="updatebutton" type="button" value="Update"/>
+
     <div id="sortby">
       Sort By: <input type="radio" name="sort" value="date" checked/>Date <input type="radio" name="sort" value="rank"/>Rank
     </div>
@@ -14,6 +17,7 @@
     <div id="results">
       results go here
     </div>
+    <hr/>
     <div id="doneresults">
       done results go here
     </div>
