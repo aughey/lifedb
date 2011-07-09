@@ -234,13 +234,15 @@ function startApp(db,collection) {
 
 var db = new mongo.Db('lifedb', new mongo.Server('localhost', 27017, {}), {});
 db.open(function(err, db) {
-  db.collection('lifedb', function(err, collection) {
-    if(err) {
-      console.log("Error getting collection");
-    } else {
-      console.log('Connectecd to mongodb lifedb');
-      startApp(db,collection);
-    }
-  });
-});
+    db.collection('lifedb', function(err, collection) {
+      collection.insert({_id: 'lifedb'}, function() {
+        if(err) {
+        console.log("Error getting collection");
+        } else {
+        console.log('Connectecd to mongodb lifedb');
+        startApp(db,collection);
+        }
+        });
+      });
+    });
 
