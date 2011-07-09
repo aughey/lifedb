@@ -1,7 +1,10 @@
 <ul>
   <% _.each(results, function(result) { %>
     <li>
-        <div class="idea"><%= result.data.idea %> <input type="checkbox" onClick="completeidea('<%= result._id %>','done','pending')"/></div>
+        <div class="idea">
+           <%= result.data.idea %> - created <%= new Date(result.created_on) %> 
+          <input type="checkbox" onClick="completeidea('<%= result._id %>','done','pending')"/>
+        </div>
         <div class="tags">
         </div>
     </li>

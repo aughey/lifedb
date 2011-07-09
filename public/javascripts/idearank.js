@@ -93,7 +93,8 @@
       var command = {
         op: 'children',
 			  rawid: 'lifedb',
-			  bucket: div.substr(1)
+			  bucket: div.substr(1),
+			  sort: { created_on: -1 }
         //q: { '$query': null }
         // q: { }
         //q: { '$orderby': 'idea'}
@@ -110,7 +111,7 @@
     //executeCommand({ op: 'get', rawid: 'lifedb'}, update);
   });
 
-  function sendidea(idea) {
+  function newidea(idea) {
     var command = {
       op: 'new',
       data: { idea: idea.attr('value') },

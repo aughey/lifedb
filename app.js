@@ -138,7 +138,11 @@ function startApp(db,collection) {
 						mids.push(db.bson_serializer.ObjectID.createFromHexString(id));
 					}
 
-					collection.find({_id: { $in: mids } }).toArray(function(err, results) {
+					var found = collection.find({ _id: { $in: mids} });
+					if(command.sort) {
+						found = found.sort(command.sort);
+					}
+					found.toArray(function(err, results) {
 						returndata.push(results);
 						next();
 					});
