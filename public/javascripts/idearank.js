@@ -1,17 +1,15 @@
 //(function() {
   var templates = { }
 
-  var jade = require("jade");
+//  var jade = require("jade");
 
   function _renderTemplate(name,data,callback) {
-    var template = _.template(templates[name]);
+    var template = templates[name];
     if(name.match(/\.underscore$/)) {
 
       //callback(Mustache.to_html(template,{ results: data }));
 			var html = template({ results: data });
       callback(html);
-    } else if(name.match(/\.jade$/)) {
-      callback(jade.render(template, { locals: { data: data } }));
     } else {
       callback("unknown template");
     }
@@ -23,9 +21,16 @@
     }
     templates[name] = [];
     jQuery.get(name,{}, function(template) {
-      // render any registered template funcitons
+			// Compile the template
+			if(name.match(/\.underscore$/)) {
+				template = _.template(template);
+			} else {
+				alert("unknown template type " + name);
+			}
+
       var regcb = templates[name];
       templates[name] = template;
+      // render any registered template funcitons
       jQuery.each(regcb, function(index, cb) {
         cb(template);
       });
