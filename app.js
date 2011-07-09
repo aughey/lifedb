@@ -78,6 +78,12 @@ function startApp(db,collection) {
     if(command.op == 'new') {
       var time = new Date;
 
+			if(!command.bucket) {
+				returndata.push("error: bucket not given");
+				donecallback(returndata);
+				return;
+			}
+
       getRecordFromCommand("parent_",command, function(parent_record) {
         if(!parent_record) {
           returndata.push("error: no parent for " + JSON.stringify(command));
@@ -95,7 +101,12 @@ function startApp(db,collection) {
             donecallback(returndata);
             return;
           } else {
-						collection.update( { _id: parent_record._id }, { '$addToSet' : { children: docs._id } }, function() {
+						docs = docs[0];
+						command.bucket = command.bucket.replace(/\./,'');
+						var bucket = 'children.' + command.bucket;
+
+						var addtoset = JSON.parse("{ \"" + bucket + "\": \"" + docs._id + "\" }")
+						collection.update( { _id: parent_record._id }, { '$addToSet' : addtoset }, function() {
 							state.lastsave = docs;
 							returndata.push(docs);
 							next();
@@ -103,47 +114,71 @@ function startApp(db,collection) {
           }
         });
       });
-    } else if(command.op == 'search') {
-      var q = command.q;
-      if(!q) {
-        q = { }
-      }
-      collection.find(q).toArray(function(err, results) {
-        returndata.push(results);
-        next();
-      });
-    } else if(command.op == 'get') {
-      getRecordFromCommand("",command, function(record) {
-        if(record) {
-          returndata.push(record);
-          next();
-        } else {
-          returndata.push("error");
-          donecallback(returndata);
-          return;
-        }
-      });
-    } else if(command.op == 'add_child') {
-    } else {
-      returndata.push("error: Unknown command " + command.op);
-      donecallback(returndata);
-      return;
-    }
-  }
-  var postfunction = function(req, res) {
-    var commandjs = null;
-    if(req.param('command')) {
-      var commandstr = req.param('command');
-      commandjs = [JSON.parse(commandstr)];
-    } else if(req.param('commands')) {
-      var commandstr = req.param('commands');
-      commandjs = JSON.parse(commandstr);
-    }
+		} else if(command.op == 'children') {
+			getRecordFromCommand("",command,function(record) {
+				var childrenids = record.children[command.bucket];
+				if(!childrenids) {
+					returndata.push([]);
+					next();
+				} else {
+					var mids = [];
+					for(var i=0;i<childrenids.length;++i) {
+						var id = childrenids[i];
+						mids.push(db.bson_serializer.ObjectID.createFromHexString(id));
+					}
+
+					collection.find({_id: { $in: mids } }).toArray(function(err, results) {
+						returndata.push(results);
+						next();
+					});
+				}
+			});
+		} else if(command.op == 'search') {
+			var q = command.q;
+			if(!q) {
+				q = { }
+			}
+			collection.find(q).toArray(function(err, results) {
+				returndata.push(results);
+				next();
+			});
+		} else if(command.op == 'get') {
+			getRecordFromCommand("",command, function(record) {
+				if(record) {
+					returndata.push(record);
+					next();
+				} else {
+					returndata.push("error");
+					donecallback(returndata);
+					return;
+				}
+			});
+		} else if(command.op == 'add_child') {
+		} else {
+			returndata.push("error: Unknown command " + command.op);
+			donecallback(returndata);
+			return;
+		}
+	}
+	var postfunction = function(req, res) {
+		var commandjs = null;
+		var oneonly = false;
+		if(req.param('command')) {
+			var commandstr = req.param('command');
+			commandjs = [JSON.parse(commandstr)];
+			oneonly = true;
+		} else if(req.param('commands')) {
+			var commandstr = req.param('commands');
+			commandjs = JSON.parse(commandstr);
+		}
 
     var returndata = [ ];
     var state = { };
     executeCommand(commandjs,0,state,returndata,function() {
-      res.send(JSON.stringify(returndata));
+			if(oneonly) {
+				returndata = returndata[0];
+			}
+			res.send(JSON.stringify(returndata));
     });
   }
   app.post("/execute", postfunction);

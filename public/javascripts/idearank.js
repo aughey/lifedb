@@ -4,9 +4,12 @@
   var jade = require("jade");
 
   function _renderTemplate(name,data,callback) {
-    var template = templates[name];
-    if(name.match(/\.mustache$/)) {
-      callback(Mustache.to_html(template,{ results: data }));
+    var template = _.template(templates[name]);
+    if(name.match(/\.underscore$/)) {
+
+      //callback(Mustache.to_html(template,{ results: data }));
+			var html = template({ results: data });
+      callback(html);
     } else if(name.match(/\.jade$/)) {
       callback(jade.render(template, { locals: { data: data } }));
     } else {
@@ -59,26 +62,29 @@
   function executeCommand(command, callback) {
     jQuery.post("/execute",{ command: JSON.stringify(command) },function(data) {
       data = jQuery.parseJSON(data);
-      callback(data);
+			if(callback) {
+				callback(data);
+			}
     });
   }
 
   function update()
   {
-    var divs = ['#results','#doneresults'];
-    var templatename = "results.mustache";
+    var divs = ['#pending','#done'];
+    var templatename = "results.underscore";
     jQuery.each(divs, function(index,div) {
       getTemplate(templatename);
       $(div).html("Loading...");
       var command = {
-        op: 'search',
-        q: { '$query': {}, '$orderby': { 'created_on': -1 } }
+        op: 'children',
+			  rawid: 'lifedb',
+			  bucket: div.substr(1)
         //q: { '$query': null }
         // q: { }
         //q: { '$orderby': 'idea'}
       };
       executeCommand(command, function(data) {
-        updateDIV(div,templatename,data[0]);
+        updateDIV(div,templatename,data);
       });
     });
   }
@@ -92,8 +98,13 @@
     var command = {
       op: 'new',
       data: { idea: idea.attr('value') },
-      parent_rawid: 'lifedb'
+      parent_rawid: 'lifedb',
+			bucket: 'pending'
     };
     executeCommand(command, update);
   }
+
+  function completeidea(id) {
+		alert(id);
+	}
 //})();

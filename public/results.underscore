@@ -1,0 +1,9 @@
+<ul>
+  <% _.each(results, function(result) { %>
+    <li>
+        <div class="idea"><%= result.data.idea %> <input type="checkbox" onClick="completeidea('<%= result._id %>')"/></div>
+        <div class="tags">
+        </div>
+    </li>
+  <% }); %>
+</ul>
