@@ -66,6 +66,14 @@ function startApp(db,collection) {
     });
   }
 
+	function bucketobject(command,id) {
+		command.bucket = command.bucket.replace(/\./,'');
+		var bucket = 'children.' + command.bucket;
+
+		var addtoset = JSON.parse("{ \"" + bucket + "\": \"" + id + "\" }");
+		return addtoset;
+	}
+
   function executeCommand(commands, index, state, returndata, donecallback) {
     if(index >= commands.length) {
       donecallback(returndata);
@@ -102,10 +110,8 @@ function startApp(db,collection) {
             return;
           } else {
 						docs = docs[0];
-						command.bucket = command.bucket.replace(/\./,'');
-						var bucket = 'children.' + command.bucket;
-
-						var addtoset = JSON.parse("{ \"" + bucket + "\": \"" + docs._id + "\" }")
+						
+						var addtoset = bucketobject(command,docs._id);
 						collection.update( { _id: parent_record._id }, { '$addToSet' : addtoset }, function() {
 							state.lastsave = docs;
 							returndata.push(docs);
@@ -116,6 +122,11 @@ function startApp(db,collection) {
       });
 		} else if(command.op == 'children') {
 			getRecordFromCommand("",command,function(record) {
+				if(!record.children) {
+					returndata.push([]);
+					next();
+					return;
+				}
 				var childrenids = record.children[command.bucket];
 				if(!childrenids) {
 					returndata.push([]);
@@ -153,7 +164,28 @@ function startApp(db,collection) {
 					return;
 				}
 			});
-		} else if(command.op == 'add_child') {
+		} else if(command.op == 'remove_bucket') {
+			command.bucket = command.bucket.replace(/\./,'');
+			getRecordFromCommand("",command, function(record) {
+				getRecordFromCommand("parent_",command, function(parent_record) {
+					var addtoset = bucketobject(command,record._id);
+					collection.update( { _id: parent_record._id }, { '$pull' : addtoset }, function() {
+						returndata.push('ok');
+						next();
+					});
+				});
+			});
+		} else if(command.op == 'add_bucket') {
+			command.bucket = command.bucket.replace(/\./,'');
+			getRecordFromCommand("",command, function(record) {
+				getRecordFromCommand("parent_",command, function(parent_record) {
+					var addtoset = bucketobject(command,record._id);
+					collection.update( { _id: parent_record._id }, { '$addToSet' : addtoset }, function() {
+						returndata.push('ok');
+						next();
+					});
+				});
+			});
 		} else {
 			returndata.push("error: Unknown command " + command.op);
 			donecallback(returndata);
@@ -162,24 +194,14 @@ function startApp(db,collection) {
 	}
 	var postfunction = function(req, res) {
 		var commandjs = null;
-		var oneonly = false;
-		if(req.param('command')) {
-			var commandstr = req.param('command');
-			commandjs = [JSON.parse(commandstr)];
-			oneonly = true;
-		} else if(req.param('commands')) {
-			var commandstr = req.param('commands');
-			commandjs = JSON.parse(commandstr);
-		}
+		var commandstr = req.param('commands');
+		commandjs = JSON.parse(commandstr);
 
     var returndata = [ ];
     var state = { };
     executeCommand(commandjs,0,state,returndata,function() {
-			if(oneonly) {
-				returndata = returndata[0];
-			}
 			res.send(JSON.stringify(returndata));
-    });
+		});
   }
   app.post("/execute", postfunction);
   app.get("/execute", postfunction);

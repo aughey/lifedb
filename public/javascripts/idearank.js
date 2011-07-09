@@ -65,21 +65,31 @@
   }
 
   function executeCommand(command, callback) {
-    jQuery.post("/execute",{ command: JSON.stringify(command) },function(data) {
+    jQuery.post("/execute",{ commands: JSON.stringify([command]) },function(data) {
       data = jQuery.parseJSON(data);
 			if(callback) {
-				callback(data);
+				callback(data[0]);
 			}
     });
   }
 
+  function executeCommands(commands, callback) {
+    jQuery.post("/execute",{ commands: JSON.stringify(commands) },function(data) {
+      data = jQuery.parseJSON(data);
+			if(callback) {
+				callback(data[0]);
+			}
+    });
+  }
+
+
   function update()
   {
     var divs = ['#pending','#done'];
-    var templatename = "results.underscore";
     jQuery.each(divs, function(index,div) {
+			var templatename = div.substr(1) + ".underscore"
       getTemplate(templatename);
-      $(div).html("Loading...");
+      //$(div).html("Loading...");
       var command = {
         op: 'children',
 			  rawid: 'lifedb',
@@ -96,7 +106,8 @@
 
   $(document).ready(function() {
     $('#updatebutton').click(update);
-    executeCommand({ op: 'get', rawid: 'lifedb'}, update);
+		update();
+    //executeCommand({ op: 'get', rawid: 'lifedb'}, update);
   });
 
   function sendidea(idea) {
@@ -109,7 +120,11 @@
     executeCommand(command, update);
   }
 
-  function completeidea(id) {
-		alert(id);
+  function completeidea(id,from,to) {
+		var commands = [
+		{ op: 'add_bucket', parent_rawid: 'lifedb', id: id, bucket: to },
+		{ op: 'remove_bucket', parent_rawid: 'lifedb', id: id, bucket: from},
+			];
+		executeCommands(commands,update);
 	}
 //})();
