@@ -82,9 +82,19 @@ function executeCommands(commands, callback) {
 	});
 }
 
+function disableall()
+{
+  $('input').attr("disabled",true);
+}
+
+function enableall()
+{
+  $('input').removeAttr("disabled");
+}
 
 function update()
 {
+
 	var divs = ['#pending' ,'#done'];
 	var commands = [];
 	jQuery.each(divs, function(index,div) {
@@ -108,6 +118,7 @@ function update()
 			updateDIV(div,templatename,data[index]);
 		});
 	});
+        enableall();
 }
 
 $(document).ready(function() {
@@ -117,6 +128,7 @@ $(document).ready(function() {
 });
 
 function newidea(idea) {
+  disableall();
 	var command = {
 		op: 'new',
 		data: { idea: idea.attr('value') },
@@ -126,6 +138,7 @@ function newidea(idea) {
 }
 
 function completeidea(id,from,to) {
+  disableall();
 	executeCommand({
 		op: 'reparent',
 		id: id,
