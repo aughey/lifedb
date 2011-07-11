@@ -77,7 +77,7 @@ function executeCommands(commands, callback) {
 	jQuery.post("/execute",{ commands: JSON.stringify(commands) },function(data) {
 		data = jQuery.parseJSON(data);
 		if(callback) {
-			callback(data[0]);
+			callback(data);
 		}
 	});
 }
@@ -86,10 +86,11 @@ function executeCommands(commands, callback) {
 function update()
 {
 	var divs = ['#pending' ,'#done'];
+	var commands = [];
 	jQuery.each(divs, function(index,div) {
 		var templatename = div.substr(1) + ".underscore"
 		getTemplate(templatename);
-	//$(div).html("Loading...");
+	  //$(div).html("Loading...");
 	var command = {
 		op: 'children',
 		id: '_lifedb.' + div.substr(1),
@@ -98,9 +99,14 @@ function update()
 	// q: { }
 	//q: { '$orderby': 'idea'}
 	};
-	executeCommand(command, function(data) {
-		updateDIV(div,templatename,data);
+	commands.push(command);
 	});
+
+	executeCommands(commands, function(data) {
+		jQuery.each(divs, function(index,div) {
+			var templatename = div.substr(1) + ".underscore"
+			updateDIV(div,templatename,data[index]);
+		});
 	});
 }
 
