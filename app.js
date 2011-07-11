@@ -6,6 +6,66 @@
 var express = require('express');
 var mongo = require('mongodb');
 
+function parseID(db,id) {
+	id = id.toString();
+	if(id[0] == '_') {
+		return id.substr(1);
+	} else {
+		return db.bson_serializer.ObjectID.createFromHexString(id);
+// 		console.log("converted id from " + id + " to " + converted + ".");
+	}
+}
+
+function getRecordCol(collection, id, callback) {
+// 	console.log("getRecordCol(" + id + ")");
+	var mid = parseID(collection.db,id);
+// 	console.log("mid is " + mid);
+	collection.findOne({_id: mid}, function(err, results) {
+		// console.log("result of getRecordCol(" + id + ") is " + results);
+		callback(results);
+	});
+}
+
+function _getRecordPath(collection, obj, patharray, callback) {
+//	console.log("_getRecordPath(" + obj + ")");
+	if(patharray.length == 0) {
+		callback(obj);
+		return;
+	}
+	if(!obj) {
+		callback(obj);
+		return;
+	}
+
+	if(!obj.named_children) {
+		callback(null);
+		return;
+	}
+
+	var name = patharray.shift();
+
+	if(!obj.named_children[name]) {
+		callback(null);
+	}
+
+	getRecordCol(collection, obj.named_children[name], function(record) {
+		_getRecordPath(collection,record,patharray,callback);
+	});
+}
+
+
+function getRecordPathCol(collection, path, callback) {
+	// console.log("getRecordPathCol(" + path + ")");
+	var patharray = path.split('.');
+
+	id = patharray.shift();
+	getRecordCol(collection, id, function(record) {
+		_getRecordPath(collection, record,patharray,callback);
+	});
+}
+
+
+
 function startApp(db,collection) {
 	var app = module.exports = express.createServer();
 
@@ -51,27 +111,9 @@ function startApp(db,collection) {
 		});
 	}
 
-	function getRecordFromCommand(prefix, command, callback) {
-		var mid;
-		if(command[prefix + "rawid"]) {
-			mid = command[prefix + 'rawid']
-		} else if(command[prefix + "id"]) {
-			mid = db.bson_serializer.ObjectID.createFromHexString(command[prefix + 'id']);
-		} else {
-			callback(null);
-			return;
-		}
-		collection.findOne({_id: mid}, function(err, results) {
-			callback(results);
-		});
-	}
 
-	function bucketobject(command,id) {
-		command.bucket = command.bucket.replace(/\./,'');
-		var bucket = 'children.' + command.bucket;
-
-		var addtoset = JSON.parse("{ \"" + bucket + "\": \"" + id + "\" }");
-		return addtoset;
+	function getRecord(path, callback) {
+		getRecordPathCol(collection, path, callback);
 	}
 
 	function executeCommand(commands, index, state, returndata, donecallback) {
@@ -83,16 +125,11 @@ function startApp(db,collection) {
 		var next = function() {
 			executeCommand(commands,index+1,state,returndata,donecallback);
 		}
+		//console.log("Executing command " + JSON.stringify(command));
 		if(command.op == 'new') {
 			var time = new Date;
 
-			if(!command.bucket) {
-				returndata.push("error: bucket not given");
-				donecallback(returndata);
-				return;
-			}
-
-			getRecordFromCommand("parent_",command, function(parent_record) {
+			getRecord(command.parent_id, function(parent_record) {
 				if(!parent_record) {
 					returndata.push("error: no parent for " + JSON.stringify(command));
 					donecallback(returndata);
@@ -101,7 +138,7 @@ function startApp(db,collection) {
 				var tosave = {
 					data: command.data,
 				created_on: time,
-				parents: [ parent_record._id ]
+				parents: [ parent_record._id.toString() ]
 				};
 				collection.insert(tosave, function(err, docs) {
 					if(err) {
@@ -111,7 +148,7 @@ function startApp(db,collection) {
 					} else {
 						docs = docs[0];
 
-						var addtoset = bucketobject(command,docs._id);
+						var addtoset = { children: docs._id.toString() };
 						collection.update( { _id: parent_record._id }, { '$addToSet' : addtoset }, function() {
 							state.lastsave = docs;
 							returndata.push(docs);
@@ -121,13 +158,18 @@ function startApp(db,collection) {
 				});
 			});
 		} else if(command.op == 'children') {
-			getRecordFromCommand("",command,function(record) {
+			getRecord(command.id,function(record) {
+				if(!record) {
+					returndata.push([]);
+					next();
+					return;
+				}
 				if(!record.children) {
 					returndata.push([]);
 					next();
 					return;
 				}
-				var childrenids = record.children[command.bucket];
+				var childrenids = record.children;
 				if(!childrenids) {
 					returndata.push([]);
 					next();
@@ -135,7 +177,7 @@ function startApp(db,collection) {
 					var mids = [];
 					for(var i=0;i<childrenids.length;++i) {
 						var id = childrenids[i];
-						mids.push(db.bson_serializer.ObjectID.createFromHexString(id));
+						mids.push(parseID(db,id));
 					}
 
 					var found = collection.find({ _id: { $in: mids} });
@@ -158,7 +200,7 @@ function startApp(db,collection) {
 				next();
 			});
 		} else if(command.op == 'get') {
-			getRecordFromCommand("",command, function(record) {
+			getRecord(command.id, function(record) {
 				if(record) {
 					returndata.push(record);
 					next();
@@ -168,25 +210,22 @@ function startApp(db,collection) {
 					return;
 				}
 			});
-		} else if(command.op == 'remove_bucket') {
-			command.bucket = command.bucket.replace(/\./,'');
-			getRecordFromCommand("",command, function(record) {
-				getRecordFromCommand("parent_",command, function(parent_record) {
-					var addtoset = bucketobject(command,record._id);
-					collection.update( { _id: parent_record._id }, { '$pull' : addtoset }, function() {
-						returndata.push('ok');
-						next();
-					});
-				});
-			});
-		} else if(command.op == 'add_bucket') {
-			command.bucket = command.bucket.replace(/\./,'');
-			getRecordFromCommand("",command, function(record) {
-				getRecordFromCommand("parent_",command, function(parent_record) {
-					var addtoset = bucketobject(command,record._id);
-					collection.update( { _id: parent_record._id }, { '$addToSet' : addtoset }, function() {
-						returndata.push('ok');
-						next();
+		} else if(command.op == 'reparent') {
+			getRecord(command.id, function(record) {
+				getRecord(command.from_id, function(from) {
+					getRecord(command.to_id,       function(to) {
+						if(!record || !from || !to) {
+							returndata.push("error, couldn't find record");
+							callback();
+							return;
+						}
+
+						collection.update( { _id: from._id }, { '$pull' : { children: record._id.toString() } }, function(err,foo) {
+							collection.update( { _id: to._id }, { '$addToSet' : { children: record._id.toString() } }, function(err,foo) {
+								returndata.push("ok");
+								next();
+							});
+						});
 					});
 				});
 			});
@@ -235,12 +274,22 @@ function startApp(db,collection) {
 var db = new mongo.Db('lifedb', new mongo.Server('localhost', 27017, {}), {});
 db.open(function(err, db) {
 	db.collection('lifedb', function(err, collection) {
-		collection.insert({_id: 'lifedb'}, function() {
-			if(err) {
-				console.log("Error getting collection");
+		var start = function() { startApp(db,collection); }
+
+		getRecordCol(collection,"_lifedb", function(lifedb) {
+			if(!lifedb) {
+				console.log("lifedb parent record doesn't exist.  Creating");
+				collection.insert([{},{}], function(err, record) {
+					var pending = record[0];
+					var done = record[1];
+					console.log(pending);
+					console.log(done);
+					collection.insert({_id: 'lifedb', named_children: { pending: pending._id.toString(), done: done._id.toString() }}, function(err, record) {
+						start();
+					});
+				});
 			} else {
-				console.log('Connectecd to mongodb lifedb');
-				startApp(db,collection);
+				start();
 			}
 		});
 	});
