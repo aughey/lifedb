@@ -8,7 +8,9 @@ var mongo = require('mongodb');
 
 function parseID(db,id) {
 	id = id.toString();
-	if(id[0] == '_') {
+	if(id == '_') {
+		return "root";
+	} else if(id == 'root') {
 		return "root";
 	} else {
 		return db.bson_serializer.ObjectID.createFromHexString(id);
