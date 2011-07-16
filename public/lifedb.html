@@ -1,26 +1,29 @@
 <html>
   <head>
-    <title>Yaml tester</title>
+    <title>LifeDB</title>
     <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> -->
     <script src="/javascripts/jquery.min.js"></script>
     <!-- <script src="/javascripts/mustache.js"></script> -->
     <script src="/javascripts/underscore-min.js"></script>
     <!-- <script src="/javascripts/jade.min.js"></script> -->
+    <script src="/javascripts/less-1.1.3.min.js"></script>
     <script src="/javascripts/templates.js"></script>
     <script src="/javascripts/prettyprint.js"></script>
+    <script src="/javascripts/lifedb.js"></script>
     <script src="/javascripts/yaml.js"></script>
-    <script src="/javascripts/yaml-work.js"></script>
   </head>
   <body>
-		<textarea id="yaml" cols="80" rows="10">
-one: 1
-two: "dous"
-data:
-  - another: hash
-  - in: an array
-</textarea>
+    <div id="headcontrols">
+      <div class="newidea">
+				ID: <input id="id" type="text" value="_"/>
+        <input type="submit" onClick="getID($('#id').attr('value'))" value="Get ID">
+      </div>
+    </div>
 
-		<div id="results"></div>
-		<div id="pretty"></div>
+		<div id="results">
+		</div>
+
+		<textarea id="yaml" cols="80" rows="10"></textarea>
+
   </body>
 </html>

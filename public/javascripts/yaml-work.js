@@ -1,19 +1,38 @@
 var yaml = null;
 
+function HtmlEncode(s)
+{
+  var el = document.createElement("div");
+  el.innerText = el.textContent = s;
+  s = el.innerHTML;
+  delete el;
+  return s;
+}
+
+
 function updateyaml()
 {
 	if(yaml == null) {
 		yaml = newYAML();
 	}
-	var data = null;
+	var html = null;
 	try {
-	data = JSON.stringify(yaml.eval($('#yaml').val()));
+		var data = yaml.eval($('#yaml').val());
+		html = HtmlEncode(JSON.stringify(data));
+/*
+ * renderTemplate("pretty.underscore", data, function(html) {
+			$('#pretty').html(html);
+		});
+		*/
+		$('#pretty').html(prettyPrint(data));
 	} catch(err) {
-		data = "Not valid yaml";
+		html = "Not valid yaml " + err;
 	}
-	$('#results').html("changed to " + data);
+	$('#results').html(html);
+
 }
 
 $(function() {
 	$('#yaml').keyup(updateyaml);
+	updateyaml();
 });

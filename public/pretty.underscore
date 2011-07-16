@@ -1,0 +1,28 @@
+<h1>Pretty Print</h1>
+
+<%
+function printdata(o) {
+  obj = _(o); 
+  if(obj.isArray()) {
+    res = "[ ";
+      
+    res += obj.map(function(value) {
+       return printdata(value);
+    }).join(', ');
+    res += " ]";
+    return res;
+  } else if(obj.isString()) {
+    return o;
+  } else if(obj.isNumber()) {
+    return o;
+  } else {
+    var res = "";
+    obj.each(function(value,key) {
+    res = res + key + ' = ' + printdata(value) + "<br/>";
+    });
+		return res;
+  }
+}
+%>
+
+<%= printdata(results) %>

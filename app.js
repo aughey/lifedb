@@ -9,7 +9,7 @@ var mongo = require('mongodb');
 function parseID(db,id) {
 	id = id.toString();
 	if(id[0] == '_') {
-		return id.substr(1);
+		return "root";
 	} else {
 		return db.bson_serializer.ObjectID.createFromHexString(id);
 // 		console.log("converted id from " + id + " to " + converted + ".");
@@ -276,17 +276,10 @@ db.open(function(err, db) {
 	db.collection('lifedb', function(err, collection) {
 		var start = function() { startApp(db,collection); }
 
-		getRecordCol(collection,"_lifedb", function(lifedb) {
-			if(!lifedb) {
-				console.log("lifedb parent record doesn't exist.  Creating");
-				collection.insert([{},{}], function(err, record) {
-					var pending = record[0];
-					var done = record[1];
-					console.log(pending);
-					console.log(done);
-					collection.insert({_id: 'lifedb', named_children: { pending: pending._id.toString(), done: done._id.toString() }}, function(err, record) {
-						start();
-					});
+		getRecordCol(collection,"_", function(root) {
+			if(!root) {
+				console.log("root record doesn't exist.  Creating");
+				collection.insert({_id: 'root'}, function(err, record) {
 				});
 			} else {
 				start();
