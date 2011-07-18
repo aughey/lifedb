@@ -1,5 +1,6 @@
 var _yaml = null;
 var global_id = null;
+var history = [];
 
 function yaml() {
 	if(_yaml == null) {
@@ -26,11 +27,22 @@ function executeCommands(commands, callback) {
 	});
 }
 
+function clicknode(node) {
+	var id = node.currentTarget.innerHTML;
+	getID(id);
+	return false;
+}
+
 function getID(id) {
+	if(global_id) {
+  	history.push(global_id);
+	}
 	global_id = id;
 	executeCommand({op: 'get', id: id}, function(data) {
+		var html = prettyPrint(data);
 			renderTemplate("lifedb_record.underscore", data, function(html) {
 				  $('#results').html(html);
+					$('#results').find('.nodeid').click(clicknode);
 				});
 			/*
 		$('#results').prepend("<h1>" + id + "</h1> <h2>Data</h2>");
@@ -71,9 +83,25 @@ op: 'new',
 	return false;
 }
 
+function back()
+{
+	var toid = history.pop();
+	if(toid) {
+		global_id = null;
+  	getID(toid);
+	}
+	return false;
+}
+
 $(function() {
 	getID($('#id').attr('value'));
 	$('#newchild .yaml').keyup(updateyaml);
 	$('#newchild').submit(createnewchildrecord);
+	$('#back').click(back);
+	$(window).bind('keypress',function(e) {
+		if(e.keyCode == 98) {
+			back();
+		}
+	});
 });
 

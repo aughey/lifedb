@@ -1,1 +1,17 @@
-<%= prettyPrint(results.data).outerHTML %>
+<div class="record">
+<h1>Data of <%= results._id %></h1>
+<% if(!results.data) { %>
+  No data defined for this node
+<% } else { %>
+<%= prettyPrint(results.data).innerHTML %>
+<% } %>
+
+<h1>Children of <%= results._id %></h1>
+<div class="children">
+<ul>
+  <% _.each(results.children,function(child) { %>
+    <li><a href="#" class="nodeid"><%= child %></a></li>
+  <% }); %>
+</ul>
+</div>
+</div>
