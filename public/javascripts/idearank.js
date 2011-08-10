@@ -44,7 +44,7 @@ function update()
 	  //$(div).html("Loading...");
 	var command = {
 		op: 'children',
-		id: '_.lifedb' + div.substr(1),
+		id: '_.lifedb.' + div.substr(1),
 		sort: { created_on: -1 }
 	//q: { '$query': null }
 	// q: { }
@@ -74,6 +74,7 @@ function newidea(idea) {
 		op: 'new',
 		data: { idea: idea.attr('value') },
 		parent_id: '_.lifedb.pending',
+      options: { create_parents: true }
 	};
 	executeCommand(command, update);
 }
@@ -85,6 +86,7 @@ function completeidea(id,from,to) {
 		id: id,
 		from_id: '_.lifedb.' + from,
 		to_id: '_.lifedb.' + to,
+      options: { create_parents: true }
 	}, update);
 }
 //})();
