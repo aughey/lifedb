@@ -2,8 +2,8 @@
   <% _.each(results, function(result) { %>
     <li>
         <div class="idea">
-           <%= result.data.idea %> - created <%= new Date(result.created_on) %>
           <input type="checkbox" onClick="completeidea('<%= result._id %>','pending','done')"/>
+           <%= result.data.idea %> - created <%= new Date(result.created_on) %>
         </div>
         <div class="tags">
         </div>
