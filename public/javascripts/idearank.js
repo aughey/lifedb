@@ -1,3 +1,12 @@
+function rootpath() {
+   var path = $('#rootpath').attr('value');
+   if(path) {
+      return path;
+   } else {
+      return "_.newdatabase.foo.bar.blech.";
+   }
+}
+
 function updateDIV(id,templatename,data)
 {
 	renderTemplate(templatename,data,function(html) {
@@ -44,7 +53,7 @@ function update()
 	  //$(div).html("Loading...");
 	var command = {
 		op: 'children',
-		id: '_.lifedb.' + div.substr(1),
+		id: rootpath() + div.substr(1),
 		sort: { created_on: -1 }
 	//q: { '$query': null }
 	// q: { }
@@ -73,7 +82,7 @@ function newidea(idea) {
 	var command = {
 		op: 'new',
 		data: { idea: idea.attr('value') },
-		parent_id: '_.lifedb.pending',
+		parent_id: rootpath() + 'pending',
       options: { create_parents: true }
 	};
 	executeCommand(command, update);
@@ -84,8 +93,8 @@ function completeidea(id,from,to) {
 	executeCommand({
 		op: 'reparent',
 		id: id,
-		from_id: '_.lifedb.' + from,
-		to_id: '_.lifedb.' + to,
+		from_id: rootpath() + from,
+		to_id: rootpath() + to,
       options: { create_parents: true }
 	}, update);
 }
