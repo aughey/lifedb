@@ -40,13 +40,20 @@
     <header>
       <input id="rootpath" value="_.one.two.three."/>
     </header>
+    <div id="spinner" style="display: block; position:absolute; top: 0; right: 0; width: 24; height: 24">
+       <img src="/spinner.gif" />
+    </div>
     <div id="main" role="main">
-       <h1>Pending ideas</h1>
-       <ul data-bind="template: {name: 'pendingTemplate', foreach: pending}">
+       <h1>Pending ideas (<span data-bind="text: pending().length">&nbsp;</span>)</h1>
+       <ul data-bind="template: {name: 'pendingTemplate', foreach: pending, templateOptions: {
+          from: 'pending', to: 'done'
+          }}">
        </ul>
 
-       <h1>Finished ideas</h1>
-       <ul data-bind="template: {name: 'pendingTemplate', foreach: done}">
+       <h1>Finished ideas (<span data-bind="text: done().length">&nbsp;</span>)</h1>
+       <ul data-bind="template: {name: 'pendingTemplate', foreach: done, templateOptions: {
+          from: 'done', to: 'pending'
+          }}">
        </ul>
        <hr/>
     </div>
@@ -56,12 +63,11 @@ Idea Rank using BoilerPlate/KnockOut
  </div> <!--! end of #container -->
 
  <script type="text/x-jquery-tmpl" id="pendingTemplate">
-    <div class="idea">
-       <input type="checkbox" onClick="moveIdea('${_id}','pending','done')"/>
+    <li class="idea">
+       <input type="checkbox" data-bind="click: function() { moveIdea($data,$item.from,$item.to) }" />
        ${data.idea} - created ${humanDate(created_on)}
-    </div>
-    <div class="tags">
-    </div>
+       <div class="tags"> </div>
+    </li>
  </script>
 
  <!-- JavaScript at the bottom for fast page loading -->
@@ -86,6 +92,19 @@ Idea Rank using BoilerPlate/KnockOut
        };
 
        ko.applyBindings(viewModel); // This makes Knockout get to work
+
+       function moveIdea(item, from, to) {
+          viewModel[from].remove(item);
+          viewModel[to].push(item);
+
+          executeCommand({
+             op: 'reparent',
+             id: item._id,
+             from_id: rootpath() + from,
+             to_id: rootpath() + to,
+             options: { create_parents: true }
+          });
+       }
 
        executeCommands([
        {

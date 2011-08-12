@@ -18,9 +18,21 @@ function updateDIV(id,templatename,data)
 	});
 }
 
+var pending_commands = 0;
+function incr_pending(value) {
+   pending_commands += value;
+   if(pending_commands == 0) {
+      $('#spinner').hide();
+   } else {
+      $('#spinner').show();
+   }
+}
+
 function executeCommand(command, callback) {
+   incr_pending(1);
 	jQuery.post("/execute",{ commands: JSON.stringify([command]) },function(data) {
 		data = jQuery.parseJSON(data);
+      incr_pending(-1);
 		if(callback) {
 			callback(data[0]);
 		}
@@ -28,8 +40,10 @@ function executeCommand(command, callback) {
 }
 
 function executeCommands(commands, callback) {
+   incr_pending(1);
 	jQuery.post("/execute",{ commands: JSON.stringify(commands) },function(data) {
 		data = jQuery.parseJSON(data);
+      incr_pending(-1);
 		if(callback) {
 			callback(data);
 		}
@@ -85,7 +99,7 @@ $(document).ready(function() {
 
 function newidea(idea) {
   disableall();
-	var commands = {
+	var command = {
 		op: 'new',
 		data: { idea: idea.attr('value') },
 		parent_id: rootpath() + 'pending',
