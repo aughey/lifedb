@@ -250,14 +250,30 @@ data: data,
 		} else if(command.op == 'get') {
 			getRecord(command.id, function(record) {
 				if(record) {
+               collection.update( { _id: record._id }, { '$pull' : { children: record._id.toString() } }, function(err,foo) {
 					returndata.push(record);
 					next();
+               });
 				} else {
 					returndata.push("error");
 					donecallback(returndata);
-					return;
 				}
 			});
+      } else if(command.op == 'add_to_set') {
+         getRecord(command.id, function(record) {
+               if(record) {
+               var addtoset = { };
+               addtoset["data." + command.field] = command.value;
+               collection.update( { _id: record._id }, { '$addToSet' : addtoset }, function() {
+                  returndata.push("done");
+                  next();
+                  });
+               } else {
+               returndata.push("error");
+               donecallback(returndata);
+               return;
+               }
+               });
 		} else if(command.op == 'reparent') {
 			getRecord(command.id, function(record) {
 				getRecord(command.from_id, function(from) {

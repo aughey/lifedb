@@ -79,7 +79,7 @@ $(document).ready(function() {
 
 function newidea(idea) {
   disableall();
-	var command = {
+	var commands = {
 		op: 'new',
 		data: { idea: idea.attr('value') },
 		parent_id: rootpath() + 'pending',
@@ -88,14 +88,22 @@ function newidea(idea) {
 	executeCommand(command, update);
 }
 
+var incr = 0;
 function completeidea(id,from,to) {
+   incr = incr + 1;
   disableall();
-	executeCommand({
+	executeCommands([{
 		op: 'reparent',
 		id: id,
 		from_id: rootpath() + from,
 		to_id: rootpath() + to,
       options: { create_parents: true }
-	}, update);
+	},
+   {
+     op: 'add_to_set',
+     id: id,
+     field: 'test',
+     value: incr
+   }], update);
 }
 //})();
