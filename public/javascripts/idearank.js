@@ -7,6 +7,10 @@ function rootpath() {
    }
 }
 
+function humanDate(d) {
+   return new Date(d)
+}
+
 function updateDIV(id,templatename,data)
 {
 	renderTemplate(templatename,data,function(html) {
@@ -71,11 +75,13 @@ function update()
         enableall();
 }
 
+/*
 $(document).ready(function() {
 	$('#updatebutton').click(update);
 	update();
 	//executeCommand({ op: 'get', rawid: 'lifedb'}, update);
 });
+*/
 
 function newidea(idea) {
   disableall();
