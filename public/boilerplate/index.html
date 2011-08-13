@@ -38,10 +38,17 @@
 
   <div id="container">
     <header>
-      <input id="rootpath" value="_.one.two.three."/>
+    <input id="rootpath" value="_.one.two.three."/><button onClick="initialize()"/>Update</button>
+
     </header>
-    <div id="spinner" style="display: block; position:absolute; top: 0; right: 0; width: 24; height: 24">
+    <div id="spinner" style="display: block; position:fixed; top: 0; right: 0; width: 24; height: 24">
        <img src="/spinner.gif" />
+    </div>
+    <div class="newidea">
+       <form data-bind="submit: newIdea">
+          Add task: <input data-bind="value: newIdeaText" placeholder="Create a new idea..." />
+          <button type="submit">Add</button>
+       </form>
     </div>
     <div id="main" role="main">
        <h1>Pending ideas (<span data-bind="text: pending().length">&nbsp;</span>)</h1>
@@ -87,6 +94,17 @@ Idea Rank using BoilerPlate/KnockOut
 
     <script>
        var viewModel = { 
+          newIdea: function() {
+             var command = {
+                op: 'new',
+                data: { idea: this.newIdeaText() },
+                parent_id: rootpath() + 'pending',
+                options: { create_parents: true }
+             };
+             this.newIdeaText("");
+             executeCommand(command, initialize);
+          },
+          newIdeaText: ko.observable(),
           pending: ko.observableArray([]),
           done: ko.observableArray([]),
        };
@@ -104,25 +122,45 @@ Idea Rank using BoilerPlate/KnockOut
              to_id: rootpath() + to,
              options: { create_parents: true }
           });
+          initialize();
        }
 
-       executeCommands([
-       {
-          op: 'children', 
-          id: rootpath() + "pending",
-          sort: { created_on: -1 }
-       },
-       {
-          op: 'children', 
-          id: rootpath() + "done",
-          sort: { created_on: -1 }
+       function fetch(groups) {
+          jQuery.each(groups,function(index,group) {
+             executeCommand(
+             {
+                op: 'children', 
+                id: rootpath() + group,
+                sort: { created_on: -1 }
+             } , function(data) {
+                viewModel[group](data);
+             });
+          });
        }
-       ],
-       function(data) {
-          viewModel.pending(data[0]);
-          viewModel.done(data[1]);
+
+       function initialize() {
+          fetch(['pending','done']);
+          /*
+          executeCommands([
+          {
+             op: 'children', 
+             id: rootpath() + "pending",
+             sort: { created_on: -1 }
+          },
+          {
+             op: 'children', 
+             id: rootpath() + "done",
+             sort: { created_on: -1 }
+          }
+          ],
+          function(data) {
+             viewModel.pending(data[0]);
+             viewModel.done(data[1]);
+          }
+          );
+          */
        }
-       );
+       initialize();
     </script>
     <!-- end scripts-->
 
