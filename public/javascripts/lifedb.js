@@ -1,6 +1,12 @@
 var _yaml = null;
 var global_id = null;
 var history = [];
+var cache = { };
+
+function clearCache() {
+   cache = { };
+   getID(global_id);
+}
 
 function yaml() {
 	if(_yaml == null) {
@@ -28,17 +34,18 @@ function executeCommands(commands, callback) {
 }
 
 function clicknode(node) {
-	var id = node.currentTarget.innerHTML;
+	var id = node.currentTarget.attributes['nodeid'];
+   if(id) {
+      id = id.value;
+   } else {
+  	  id = node.currentTarget.innerHTML;
+   }
 	getID(id);
 	return false;
 }
 
-function getID(id) {
-	if(global_id) {
-  	history.push(global_id);
-	}
-	global_id = id;
-	executeCommand({op: 'get', id: id}, function(data) {
+function updateRecordHTML(data)
+{
 		var html = prettyPrint(data);
 			renderTemplate("lifedb_record.underscore", data, function(html) {
 				  $('#results').html(html);
@@ -48,7 +55,21 @@ function getID(id) {
 		$('#results').prepend("<h1>" + id + "</h1> <h2>Data</h2>");
 		$('#results').append(prettyPrint(data.data));
 		*/
-	});
+}
+
+function getID(id) {
+	if(global_id) {
+  	history.push(global_id);
+	}
+	global_id = id;
+   if(cache[id]) {
+      updateRecordHTML(cache[id]);
+   } else {
+      executeCommand({op: 'get', id: id}, function(data) {
+            cache[id] = data;
+      updateRecordHTML(data);
+            });
+   }
 }
 
 function updateyaml(obj)

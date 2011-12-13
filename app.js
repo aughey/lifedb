@@ -18,6 +18,7 @@ function parseID(db,id) {
 	}
 }
 
+// This function gets a record by ID and returns that record to the callback function
 function getRecordCol(collection, id, callback) {
 // 	console.log("getRecordCol(" + id + ")");
 	var mid = parseID(collection.db,id);
@@ -54,7 +55,8 @@ data: data,
             });
    }
 
-
+// This function traverses a object tree starting with the given object
+// and traversing down into the named path given in patharray.
 function _getRecordPath(collection, obj, patharray, callback, options) {
 //	console.log("_getRecordPath(" + obj + ", " + patharray + ")");
 	if(patharray.length == 0) {

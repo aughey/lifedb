@@ -6,12 +6,27 @@
 <%= prettyPrint(results.data).innerHTML %>
 <% } %>
 
-<h1>Children of <%= results._id %></h1>
+<div class="named_children">
+<h1>Named children:</h1>
+<ul>
+  <% _.each(results.named_children,function(id,name) { %>
+    <li><a href="#" nodeid="<%= id %>" class="nodeid"><%= name %></a></li>
+  <% }); %>
+</ul>
+</div>
+
 <div class="children">
+<h1>Children of <%= results._id %></h1>
 <ul>
   <% _.each(results.children,function(child) { %>
     <li><a href="#" class="nodeid"><%= child %></a></li>
   <% }); %>
 </ul>
 </div>
+
+<div class="rawrecord">
+Raw Record:
+<%= prettyPrint(results).innerHTML %>
+</div>
+
 </div>
