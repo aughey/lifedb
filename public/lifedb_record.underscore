@@ -24,9 +24,11 @@
 </ul>
 </div>
 
+<!--
 <div class="rawrecord">
 Raw Record:
 <%= prettyPrint(results).innerHTML %>
 </div>
+-->
 
 </div>

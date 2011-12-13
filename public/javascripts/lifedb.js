@@ -66,7 +66,7 @@ function getID(id) {
       updateRecordHTML(cache[id]);
    } else {
       executeCommand({op: 'get', id: id}, function(data) {
-            cache[id] = data;
+            // XXX DON'T CACHE cache[id] = data;
       updateRecordHTML(data);
             });
    }
