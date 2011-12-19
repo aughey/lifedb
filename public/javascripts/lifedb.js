@@ -86,6 +86,27 @@ function updateyaml(obj)
 	yamlresults.html(html);
 }
 
+function createnewnamedchildrecord(e)
+{
+	var form = $(e.currentTarget);
+	var name = form.find('.name').val();
+	var command = {
+      op: 'new_named_child',
+          name: name,
+		parent_id: global_id,
+			data: null
+	};
+
+	var id = global_id; // Create a context object for the callback.
+
+	executeCommand(command, function() {
+			getID(id);
+			});
+
+	return false;
+}
+
+
 function createnewchildrecord(e)
 {
 	var form = $(e.currentTarget);
@@ -118,6 +139,7 @@ $(function() {
 	getID($('#id').attr('value'));
 	$('#newchild .yaml').keyup(updateyaml);
 	$('#newchild').submit(createnewchildrecord);
+	$('#newnamedchild').submit(createnewnamedchildrecord);
 	$('#back').click(back);
 	$(window).bind('keypress',function(e) {
 		if(e.keyCode == 98) {

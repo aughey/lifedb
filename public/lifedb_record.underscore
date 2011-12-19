@@ -15,6 +15,24 @@
 </ul>
 </div>
 
+<div class="parents">
+<h1>Parents:</h1>
+<ul>
+  <% _.each(results.parents,function(id) { %>
+    <li><a href="#" nodeid="<%= id %>" class="nodeid"><%= id %></a></li>
+  <% }); %>
+</ul>
+</div>
+
+<div class="namedparents">
+<h1>Named Parents:</h1>
+<ul>
+  <% _.each(results.named_parents,function(np) { %>
+    <li><a href="#" nodeid="<%= np.id %>" class="nodeid"><%= np.id %>[<%= np.name %>]</a></li>
+  <% }); %>
+</ul>
+</div>
+
 <div class="children">
 <h1>Children of <%= results._id %></h1>
 <ul>
@@ -24,11 +42,9 @@
 </ul>
 </div>
 
-<!--
 <div class="rawrecord">
 Raw Record:
 <%= prettyPrint(results).innerHTML %>
 </div>
--->
 
 </div>
